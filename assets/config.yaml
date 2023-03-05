@@ -1,0 +1,22 @@
+cities:
+  - name: "San Francisco" #0
+    kind: Blue
+  - name: "Atlanta" #1
+    kind: Blue
+  - name: "Washington" #2
+    kind: Blue
+  - name: "New York" #3
+    kind: Blue
+  - name: "London" #4
+    kind: Blue
+  - name: "Esen" #5
+    kind: Black
+  - name: "Madrid" #6
+    kind: Black
+  - name: "Rome" #7
+    kind: Black
+  - name: "Moscow" #8
+    kind: Black
+  - name: "Teheran" #9
+    kind: Black
+map: [0, 1, 1, 0, 1, 2, 1, 3, 2, 1, 3, 1, 2, 3, 3, 2, 3, 4, 4, 3, 4, 5, 5, 4, 4, 6, 6, 4, 5, 7, 7, 5, 5, 8, 8, 5, 6, 7, 7, 6, 8, 9, 9, 8, 9, 0]
