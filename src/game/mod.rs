@@ -1,11 +1,12 @@
 use std::{path::PathBuf, error::Error, default};
 
 use rand::{seq::SliceRandom, thread_rng};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
+use strum::IntoEnumIterator;
 
 use crate::{util::{config::GameConfig, graph::Graph}, game::world::IMACT_RATE};
 
-use self::{world::World, player::Player, turn::Turn, city::{City, CityIdx}, disease::Disease, cards::{PlayCard, Deck, NUM_EVENTS, EVENTS, DiseaseCard}};
+use self::{world::World, player::Player, turn::Turn, city::{City, CityIdx}, disease::Disease, cards::{PlayCard, Deck, NUM_EVENTS, EVENTS, DiseaseCard, Event}};
 
 pub mod turn;
 pub mod city;
@@ -14,7 +15,7 @@ pub mod cards;
 pub mod world;
 pub mod player;
 
-#[derive(Deserialize, Default, Debug)]
+#[derive(Serialize, Deserialize, Default, Debug)]
 pub enum Difficulty {
     #[default]
     Easy,
@@ -22,15 +23,14 @@ pub enum Difficulty {
     Hard,
 }
 
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Deserialize, Serialize)]
 pub struct Game {
-    world: World,
-    players: Vec<Player>,
-    current_player: usize,
-    turn: Turn,
-    difficulty: Difficulty,
-
-    end_game: bool,
+    pub world: World,
+    pub players: Vec<Player>,
+    pub current_player: usize,
+    pub turn: Turn,
+    pub difficulty: Difficulty,
+    pub end_game: bool,
 }
 
 impl Game {
@@ -50,7 +50,7 @@ impl Game {
                     spread: 0,
                     kind: city.kind,
                 },
-                index: CityIdx(i),
+                index: i,
             })
         }
 
@@ -77,11 +77,13 @@ impl Game {
         let num_play_cards = num_cities + num_events + num_epidemic_cards;
         game.world.play_deck.cards.resize(num_play_cards, PlayCard::Epidemic);
         for i in 0..num_cities {
-            game.world.play_deck.cards[i] = PlayCard::City(CityIdx(i));
+            game.world.play_deck.cards[i] = PlayCard::City(i);
         }
-        for i in 0..num_events {
-            game.world.play_deck.cards[i + num_cities] = PlayCard::Action(EVENTS[i].clone());
+
+        for (i, event) in Event::iter().enumerate() {
+            game.world.play_deck.cards[i + num_cities] = PlayCard::Event(event);
         }
+
         game.world.play_deck.cards_stack = (0..num_play_cards).collect();
         game.world.play_deck.cards_stack.shuffle(&mut thread_rng());
 
@@ -89,7 +91,7 @@ impl Game {
         game.world.disease_deck.cards.resize_with(num_cities, move || {
             let idx = city_idx;
             city_idx += 1;
-            DiseaseCard(CityIdx(idx))
+            DiseaseCard(idx)
         });
         game.world.disease_deck.cards_stack = (0..num_cities).collect();
         game.world.disease_deck.cards_stack.shuffle(&mut thread_rng());
@@ -108,10 +110,10 @@ impl Game {
 
             let mut fst = true;
             for i in 0..self.world.cities.len() {
-                if i == city.index.0 {
+                if i == city.index {
                     continue;
                 }
-                if self.world.map.connected(city.index.0, i) {
+                if self.world.map.connected(city.index, i) {
                     if fst {
                         print!("Can fly to [");
                         print!("{}", self.world.cities[i].name);
@@ -128,15 +130,16 @@ impl Game {
         }
     }
 
+    // return true if pandemic ended the world
     pub fn resolve_epidemic(&mut self, city: CityIdx) -> bool {
-        true
+        false
     }
 
     pub fn disease_city(&mut self, city: CityIdx) -> bool{
-        self.world.cities[city.0].disease.spread += 1;
+        self.world.cities[city].disease.spread += 1;
 
-        if self.world.cities[city.0].disease.spread > 3 {
-            self.world.cities[city.0].disease.spread = 3;
+        if self.world.cities[city].disease.spread > 3 {
+            self.world.cities[city].disease.spread = 3;
             return self.resolve_epidemic(city);
         }
 
@@ -157,7 +160,12 @@ impl Game {
             let action = curr_player.prompt_action();
 
             if let Some(turn) = self.turn.play_action() {
-                println!("Next player {}'s turn!", &self.players[self.current_player].name);
+                if let Turn::Action(left) = &turn {
+                    println!("Player {} has {} actions left!", curr_player.name, left);
+                } else {
+                    println!("Player {} will now draw 2 cards!", curr_player.name);
+                }
+
                 self.turn = turn;
             } else {
                 panic!("Invalid state after calling Turn::play_action");
@@ -173,23 +181,39 @@ impl Game {
             };
 
             if let Some(turn) = self.turn.draw_card(is_epidemic) {
-                println!("Next player {}'s turn!", &self.players[self.current_player].name);
+                if let Turn::Draw(left) = &turn {
+                    println!("Player {} has {} draw left!", curr_player.name, left);
+                } else {
+                    println!("Player {} will spread 2 diseases!", curr_player.name);
+                }
+
                 self.turn = turn;
             } else {
                 panic!("Invalid state after calling Turn::draw_card");
             }
         },
+        Turn::PandemicInfect => {
+
+        },
+        Turn::PandemicIntensify => {
+
+        },
         Turn::Disease(_) => {
             // Draw disease card from stack
             if let Some(card) = self.world.disease_deck.draw() {
-                println!("Disease card {} drawn!", self.world.cities[card.0.0].name);
-                if self.disease_city(card.0) {
-                    return;
-                }
+                println!("Disease card {} drawn!", self.world.cities[card.0].name);
+                self.disease_city(card.0);
             } else {
                 self.end_game();
-                return;
             };
+
+            if self.end_game {
+                return;
+            }
+
+            if let Some(turn) = self.turn.spread_disease() {
+                self.turn = turn;
+            }
         },
         Turn::NextPlayer => {
             self.current_player = (self.current_player + 1) % self.players.len();

@@ -1,6 +1,6 @@
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
-#[derive(Default)]
+#[derive(Default, Serialize, Deserialize)]
 #[derive(Debug)]
 pub struct Graph {
     graph: Vec<Vec<bool>>,

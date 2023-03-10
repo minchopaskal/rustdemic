@@ -1,83 +1,92 @@
-use super::city::CityIdx;
+use serde::{Serialize, Deserialize};
 
+use super::{city::CityIdx, disease::DiseaseKind, player::PlayerId};
+
+use strum::IntoEnumIterator;
+use strum_macros::EnumIter;
 
 #[derive(Default, Clone)]
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct DiseaseCard(pub CityIdx);
 
 #[derive(PartialEq, Clone)]
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub enum Action {
-    GovermentGrant,
-    Forecast,
-    Airlift,
-    OneQuietNight,
-    ResilientPopulation,
+    BuildResearchCenter(CityIdx),
+    TreatDisease(CityIdx),
+    DiscoverCure(DiseaseKind),
+    ShareKnowledge(PlayerId),
 
-    BuildResearchCenter,
-    TreatDisease,
-    DiscoverCure,
-    ShareKnowledge,
-
-    Drive,
-    Direct,
-    Charter,
-    Shuttle,
+    Drive(CityIdx),
+    Direct(CityIdx),
+    Charter(CityIdx),
+    Shuttle(CityIdx),
 }
 
-#[derive(PartialEq, Clone)]
+#[derive(PartialEq, Clone, Debug, Serialize, Deserialize, EnumIter)]
+pub enum Event {
+    GovermentGrant,
+    Forecast,
+    Airlift(CityIdx),
+    OneQuietNight,
+    ResilientPopulation(CardIdx),
+}
+
+#[derive(PartialEq, Clone, Serialize, Deserialize)]
 #[derive(Debug)]
-pub struct ActionCard<'a> {
-    pub title: &'a str,
-    pub effect: &'a str,
-    pub kind: Action,
+pub struct EventCard {
+    pub title: &'static str, // yay, an actual correct use of 'static lifetime
+    pub effect: &'static str,
+    pub kind: Event,
 }
 
 pub const NUM_EVENTS: usize = 5;
-pub const EVENTS: [ActionCard; NUM_EVENTS] = [
-    ActionCard {
+pub static EVENTS: [EventCard; NUM_EVENTS] = [
+    EventCard {
         title: "GovermentGrand",
         effect: "",
-        kind: Action::GovermentGrant,
+        kind: Event::GovermentGrant,
     },
-    ActionCard {
+    EventCard {
         title: "Forecast",
         effect: "",
-        kind: Action::Forecast,
+        kind: Event::Forecast,
     },
-    ActionCard {
+    EventCard {
         title: "Airlift",
         effect: "",
-        kind: Action::Airlift,
+        kind: Event::Airlift(0),
     },
-    ActionCard {
+    EventCard {
         title: "OneQuietNight",
         effect: "",
-        kind: Action::OneQuietNight,
+        kind: Event::OneQuietNight,
     },
-    ActionCard {
+    EventCard {
         title: "ResilientPopulation",
         effect: "",
-        kind: Action::ResilientPopulation,
+        kind: Event::ResilientPopulation(0),
     },
 ];
 
-#[derive(Default, PartialEq, Clone)]
+#[derive(Default, PartialEq, Clone, Serialize, Deserialize)]
 #[derive(Debug)]
 pub enum PlayCard {
     City(CityIdx),
-    Action(ActionCard<'static>),
+    Event(Event),
     #[default]
     Epidemic,
 }
 
-#[derive(Default)]
+pub type CardIdx = usize;
+
+#[derive(Default, Serialize, Deserialize)]
 #[derive(Debug)]
 pub struct Deck<T: Clone> {
     pub cards: Vec<T>,
-    pub cards_stack: Vec<usize>,
-    pub cards_discard: Vec<usize>,
+    pub cards_stack: Vec<CardIdx>,
+    pub cards_discard: Vec<CardIdx>,
 }
 
 impl<T: Clone> Deck<T> {

@@ -1,10 +1,10 @@
+use serde::{Serialize, Deserialize};
+
 use super::disease::Disease;
 
-#[derive(Default, Clone, PartialEq)]
-#[derive(Debug)]
-pub struct CityIdx(pub usize);
+pub type CityIdx = usize;
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct City {
     pub name: String,
     pub disease: Disease,

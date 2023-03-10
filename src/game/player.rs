@@ -1,19 +1,31 @@
-use super::{city::CityIdx, cards::{PlayCard, ActionCard}};
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug)]
+use super::{city::CityIdx, cards::{PlayCard, Action}};
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub enum Profession {
+    #[default]
+    None,
+    
     Medic,
     Scientist,
-    // add more
+    Dispatcher,
+    Researcher,
+    Ops,
+    Contingency,
+    QuarantineSpec,
 }
 
-#[derive(Debug)]
+pub type PlayerId = usize;
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct Player {
     pub name: String,
     pub cards: Vec<PlayCard>,
     pub profession: Profession,
     pub current_city: CityIdx,
-    pub additional_actions: Vec<ActionCard<'static>>,
+    pub additional_actions: Vec<Action>,
+    pub id: PlayerId,
 }
 
 impl Player {
@@ -21,7 +33,7 @@ impl Player {
         todo!();
     }
 
-    pub fn prompt_action(&mut self) {
-
+    pub fn prompt_action(&mut self) -> Action {
+        Action::Direct(0)
     }
 }

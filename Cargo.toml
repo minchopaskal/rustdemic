@@ -6,7 +6,15 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+bincode = "1.3.3"
+egui = "0.21.0"
+egui-miniquad = "0.14.0"
+message-io = "0.14.8"
+miniquad = "0.3.15"
 rand = "0.8.5"
 serde = {version = "1.0.152", features = ["derive"] }
 serde_yaml = "0.9.18"
+strum = "0.24.1"
+strum_macros = "0.24.3"
+uuid = "1.3.0"
 

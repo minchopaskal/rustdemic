@@ -1,10 +1,12 @@
+use serde::{Deserialize, Serialize};
+
 use crate::util::graph::Graph;
 
 use super::{city::City, cards::{Deck, PlayCard, DiseaseCard}};
 
 pub(crate) const IMACT_RATE: [u8; 8] = [2, 2, 2, 3, 3, 3, 4, 4];
 
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Serialize, Deserialize)]
 pub struct World {
     pub map: Graph,
     pub cities: Vec<City>,
